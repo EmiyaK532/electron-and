@@ -1,0 +1,47 @@
+appId: com.electron.app
+productName: 智能记事本
+directories:
+  buildResources: resources
+  output: release/${version}
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.ts'
+  - '!{.eslintignore,.eslintrc.js,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - 'resources/**/*'
+icon: resources/icon.png
+win:
+  executableName: electron-app
+  icon: resources/icon.png
+  certificateFile: path/to/certificate.pfx
+  certificatePassword: YOUR_PASSWORD
+  signAndEditExecutable: true
+mac:
+  icon: resources/icon.icns
+linux:
+  icon: resources/icon.png
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  installerHeaderIcon: resources/icon.ico
+  createStartMenuShortcut: true
+  menuCategory: false
+  runAfterFinish: true
+asarUnpack:
+  - resources/**
+extraResources:
+  - from: 'resources/'
+    to: 'resources/'
+    filter:
+      - '**/*'
+publish:
+  provider: generic
+  url: https://your-update-server.com/
