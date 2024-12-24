@@ -34,3 +34,52 @@
 .drag button {
   -webkit-app-region: no-drag;
 }
+
+/* 添加日期选择器样式 */
+.react-datepicker-wrapper {
+  z-index: 60;
+}
+
+.react-datepicker-popper {
+  z-index: 60 !important;
+}
+
+.react-datepicker {
+  @apply bg-gray-800 border-gray-700 text-gray-200;
+}
+
+.react-datepicker__header {
+  @apply bg-gray-900 border-gray-700;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  @apply text-gray-200;
+}
+
+.react-datepicker__day {
+  @apply text-gray-200 hover:bg-gray-700;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-blue-500 hover:bg-blue-600;
+}
+
+/* 添加拖拽相关样式 */
+.dragging {
+  @apply opacity-90 scale-[1.02] rotate-1;
+}
+
+/* 拖拽时的占位样式 */
+.drop-placeholder {
+  @apply border-2 border-dashed border-blue-500/50 bg-blue-500/5 rounded-xl;
+}
+
+/* 拖拽手柄的悬停效果 */
+.drag-handle {
+  @apply transition-all duration-200;
+}
+
+.drag-handle:hover .drag-dots {
+  @apply bg-blue-400;
+}

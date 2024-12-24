@@ -2,7 +2,7 @@ import { ArrowsExpandIcon, MinusSmIcon, XIcon } from '@heroicons/react/solid'
 
 export const TitleBar = (): JSX.Element => {
   return (
-    <div className="h-8 bg-gray-900 flex items-center justify-between px-4 select-none drag">
+    <div className="fixed top-0 left-0 right-0 h-8 bg-gray-900/95 backdrop-blur-sm flex items-center justify-between px-4 select-none drag z-50 border-b border-gray-800">
       <div className="text-gray-400 text-sm">智能记事本</div>
       <div className="flex space-x-2">
         <button
