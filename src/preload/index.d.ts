@@ -1,8 +1,14 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+export interface IElectronAPI {
+  windowControl: {
+    minimize: () => void
+    maximize: () => void
+    close: () => void
+  }
+}
 
 declare global {
   interface Window {
-    electron: ElectronAPI
-    api: unknown
+    api: IElectronAPI
+    electron: any
   }
 }

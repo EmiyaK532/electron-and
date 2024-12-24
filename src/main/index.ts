@@ -11,12 +11,12 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     icon: icon,
-    titleBarStyle: 'hidden',
     frame: false,
-    transparent: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      nodeIntegration: true,
+      contextIsolation: true
     }
   })
 
@@ -36,6 +36,23 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // 添加窗口控制事件处理
+  ipcMain.on('window-minimize', () => {
+    mainWindow.minimize()
+  })
+
+  ipcMain.on('window-maximize', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.restore()
+    } else {
+      mainWindow.maximize()
+    }
+  })
+
+  ipcMain.on('window-close', () => {
+    mainWindow.close()
+  })
 }
 
 // This method will be called when Electron has finished

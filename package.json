@@ -24,8 +24,10 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@headlessui/react": "^1.7.18",
-    "@heroicons/react": "^1.0.6",
+    "@heroicons/react": "v1",
     "framer-motion": "^11.0.3",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-datepicker": "^7.5.0",
     "react-spring": "^9.7.3"
   },
   "devDependencies": {
@@ -40,6 +42,8 @@
     "@types/electron": "^1.6.12",
     "@types/node": "^20.17.10",
     "@types/react": "^18.3.18",
+    "@types/react-beautiful-dnd": "^13.1.8",
+    "@types/react-datepicker": "^7.0.0",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.16",

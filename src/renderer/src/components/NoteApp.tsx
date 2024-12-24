@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PlusIcon, SearchIcon, AdjustmentsIcon } from '@heroicons/react/solid'
+import { PlusIcon, SearchIcon, AdjustmentsIcon, BellIcon } from '@heroicons/react/solid'
 import { useSpring, animated } from 'react-spring'
 import { Menu } from '@headlessui/react'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { TitleBar } from './TitleBar'
 
 interface Note {
   id: number
@@ -10,8 +14,11 @@ interface Note {
   timestamp: Date
   category: 'work' | 'personal' | 'ideas' | 'todos'
   isCompleted?: boolean
-  repeatType?: 'once' | 'daily'
+  repeatType?: 'once' | 'daily' | 'weekly' | 'monthly'
   lastCompletedDate?: string
+  dueDate?: Date
+  priority?: 'low' | 'medium' | 'high'
+  reminder?: Date
 }
 
 export const NoteApp = (): JSX.Element => {
@@ -30,6 +37,7 @@ export const NoteApp = (): JSX.Element => {
   const [filter, setFilter] = useState<Note['category'] | 'all'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const [showReminder, setShowReminder] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('notes', JSON.stringify(notes))
@@ -109,8 +117,47 @@ export const NoteApp = (): JSX.Element => {
     )
   }
 
+  const onDragEnd = (result) => {
+    if (!result.destination) return
+
+    const items = Array.from(notes)
+    const [reorderedItem] = items.splice(result.source.index, 1)
+    items.splice(result.destination.index, 0, reorderedItem)
+
+    setNotes(items)
+  }
+
+  const setNoteReminder = (id: number, date: Date) => {
+    setNotes(
+      notes.map((note) => {
+        if (note.id === id) {
+          return { ...note, reminder: date }
+        }
+        return note
+      })
+    )
+  }
+
+  useEffect(() => {
+    const checkReminders = setInterval(() => {
+      const now = new Date()
+      notes.forEach((note) => {
+        if (note.reminder && new Date(note.reminder) <= now) {
+          new Notification('待办提醒', {
+            body: note.content
+          })
+          // 清除已触发的提醒
+          setNoteReminder(note.id, undefined)
+        }
+      })
+    }, 60000) // 每分钟检查一次
+
+    return () => clearInterval(checkReminders)
+  }, [notes])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 text-gray-100">
+      <TitleBar />
       <div className="container mx-auto p-6 max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -240,130 +287,226 @@ export const NoteApp = (): JSX.Element => {
 
             <div className="space-y-4">
               <AnimatePresence>
-                {searchedNotes.map((note) => (
-                  <motion.div
-                    key={note.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    className={`group bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-700 hover:border-blue-500 transition-all duration-200 ${
-                      note.isCompleted ? 'opacity-75' : ''
-                    }`}
-                  >
-                    <div className="flex items-start space-x-4">
-                      {note.category === 'todos' && (
-                        <div className="flex flex-col items-center space-y-2">
-                          <button
-                            onClick={() => toggleTodoComplete(note.id)}
-                            className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
-                              note.isCompleted
-                                ? 'bg-green-500 border-green-500'
-                                : 'border-gray-500 hover:border-green-500'
-                            }`}
-                          >
-                            {note.isCompleted && (
-                              <svg
-                                className="w-4 h-4 text-white"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="notes">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef}>
+                        {searchedNotes.map((note, index) => (
+                          <Draggable key={note.id} draggableId={note.id.toString()} index={index}>
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="group bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-gray-700 hover:border-blue-500 transition-all duration-200"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
+                                <div className="flex items-start space-x-4">
+                                  {note.category === 'todos' && (
+                                    <div className="flex flex-col items-center space-y-2">
+                                      <button
+                                        onClick={() => toggleTodoComplete(note.id)}
+                                        className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+                                          note.isCompleted
+                                            ? 'bg-green-500 border-green-500'
+                                            : 'border-gray-500 hover:border-green-500'
+                                        }`}
+                                      >
+                                        {note.isCompleted && (
+                                          <svg
+                                            className="w-4 h-4 text-white"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M5 13l4 4L19 7"
+                                            />
+                                          </svg>
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() => toggleTodoRepeatType(note.id)}
+                                        className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                                          note.repeatType === 'daily'
+                                            ? 'text-blue-400'
+                                            : 'text-gray-500 hover:text-blue-400'
+                                        }`}
+                                      >
+                                        <svg
+                                          className="w-5 h-5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                          />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div className="flex-1">
+                                    <p
+                                      className={`text-gray-100 whitespace-pre-wrap mb-4 leading-relaxed ${
+                                        note.isCompleted ? 'line-through text-gray-400' : ''
+                                      }`}
+                                    >
+                                      {note.content}
+                                    </p>
+                                    <div className="flex justify-between items-center">
+                                      <div className="flex items-center space-x-3">
+                                        <span className="text-sm text-gray-400">
+                                          {note.timestamp.toLocaleString()}
+                                        </span>
+                                        <span
+                                          className={`px-3 py-1 text-xs rounded-full transition-colors duration-200 ${
+                                            note.category === 'work'
+                                              ? 'bg-blue-500/20 text-blue-300 group-hover:bg-blue-500/30'
+                                              : note.category === 'personal'
+                                                ? 'bg-green-500/20 text-green-300 group-hover:bg-green-500/30'
+                                                : note.category === 'ideas'
+                                                  ? 'bg-purple-500/20 text-purple-300 group-hover:bg-purple-500/30'
+                                                  : 'bg-yellow-500/20 text-yellow-300 group-hover:bg-yellow-500/30'
+                                          }`}
+                                        >
+                                          {note.category === 'work'
+                                            ? '📝 工作'
+                                            : note.category === 'personal'
+                                              ? '👤 个人'
+                                              : note.category === 'ideas'
+                                                ? '💡 想法'
+                                                : `✓ 待办 ${note.repeatType === 'daily' ? '(每日)' : ''}`}
+                                        </span>
+                                      </div>
+                                      <motion.button
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        onClick={() => handleDeleteNote(note.id)}
+                                        className="text-red-400 hover:text-red-300 transition-colors p-2 opacity-0 group-hover:opacity-100"
+                                      >
+                                        <svg
+                                          className="w-5 h-5"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                          />
+                                        </svg>
+                                      </motion.button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center space-x-2 mt-4">
+                                  <select
+                                    value={note.priority || 'low'}
+                                    onChange={(e) =>
+                                      setNotes(
+                                        notes.map((n) =>
+                                          n.id === note.id
+                                            ? { ...n, priority: e.target.value as Note['priority'] }
+                                            : n
+                                        )
+                                      )
+                                    }
+                                    className="bg-gray-700 text-sm rounded px-2 py-1"
+                                  >
+                                    <option value="low">低优先级</option>
+                                    <option value="medium">中优先级</option>
+                                    <option value="high">高优先级</option>
+                                  </select>
+
+                                  <DatePicker
+                                    selected={note.dueDate}
+                                    onChange={(date) =>
+                                      setNotes(
+                                        notes.map((n) =>
+                                          n.id === note.id ? { ...n, dueDate: date } : n
+                                        )
+                                      )
+                                    }
+                                    className="bg-gray-700 text-sm rounded px-2 py-1"
+                                    placeholderText="设置截止日期"
+                                  />
+
+                                  <select
+                                    value={note.repeatType || 'once'}
+                                    onChange={(e) =>
+                                      setNotes(
+                                        notes.map((n) =>
+                                          n.id === note.id
+                                            ? {
+                                                ...n,
+                                                repeatType: e.target.value as Note['repeatType']
+                                              }
+                                            : n
+                                        )
+                                      )
+                                    }
+                                    className="bg-gray-700 text-sm rounded px-2 py-1"
+                                  >
+                                    <option value="once">一次性</option>
+                                    <option value="daily">每天</option>
+                                    <option value="weekly">每周</option>
+                                    <option value="monthly">每月</option>
+                                  </select>
+
+                                  <button
+                                    onClick={() => setShowReminder(note.id)}
+                                    className="text-gray-400 hover:text-blue-400"
+                                  >
+                                    <BellIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
                             )}
-                          </button>
-                          <button
-                            onClick={() => toggleTodoRepeatType(note.id)}
-                            className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                              note.repeatType === 'daily'
-                                ? 'text-blue-400'
-                                : 'text-gray-500 hover:text-blue-400'
-                            }`}
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <p
-                          className={`text-gray-100 whitespace-pre-wrap mb-4 leading-relaxed ${
-                            note.isCompleted ? 'line-through text-gray-400' : ''
-                          }`}
-                        >
-                          {note.content}
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-sm text-gray-400">
-                              {note.timestamp.toLocaleString()}
-                            </span>
-                            <span
-                              className={`px-3 py-1 text-xs rounded-full transition-colors duration-200 ${
-                                note.category === 'work'
-                                  ? 'bg-blue-500/20 text-blue-300 group-hover:bg-blue-500/30'
-                                  : note.category === 'personal'
-                                    ? 'bg-green-500/20 text-green-300 group-hover:bg-green-500/30'
-                                    : note.category === 'ideas'
-                                      ? 'bg-purple-500/20 text-purple-300 group-hover:bg-purple-500/30'
-                                      : 'bg-yellow-500/20 text-yellow-300 group-hover:bg-yellow-500/30'
-                              }`}
-                            >
-                              {note.category === 'work'
-                                ? '📝 工作'
-                                : note.category === 'personal'
-                                  ? '👤 个人'
-                                  : note.category === 'ideas'
-                                    ? '💡 想法'
-                                    : `✓ 待办 ${note.repeatType === 'daily' ? '(每日)' : ''}`}
-                            </span>
-                          </div>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleDeleteNote(note.id)}
-                            className="text-red-400 hover:text-red-300 transition-colors p-2 opacity-0 group-hover:opacity-100"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </motion.button>
-                        </div>
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    )}
+                  </Droppable>
+                </DragDropContext>
               </AnimatePresence>
             </div>
           </div>
         </div>
       </div>
+
+      {showReminder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-lg font-semibold mb-4">设置提醒</h3>
+            <DatePicker
+              selected={new Date()}
+              onChange={(date) => {
+                setNoteReminder(showReminder, date)
+                setShowReminder(false)
+              }}
+              showTimeSelect
+              dateFormat="yyyy-MM-dd HH:mm"
+              className="bg-gray-700 rounded px-3 py-2 w-full"
+            />
+            <button
+              onClick={() => setShowReminder(false)}
+              className="mt-4 px-4 py-2 bg-gray-700 rounded"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
