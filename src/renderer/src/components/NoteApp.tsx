@@ -222,7 +222,7 @@ export const NoteApp = (): JSX.Element => {
         >
           <div className="absolute inset-0 bg-blue-500 opacity-10 blur-2xl rounded-full"></div>
           <h1 className="text-5xl font-bold text-center mb-4 relative bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-            智能记事本
+            HoWhite记事本
           </h1>
           <div className="h-1 w-32 mx-auto bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
         </motion.div>
