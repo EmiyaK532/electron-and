@@ -7,6 +7,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { TitleBar } from './TitleBar'
+import { CheckInCalendar } from './CheckInCalendar'
 
 interface Note {
   id: number
@@ -19,6 +20,9 @@ interface Note {
   dueDate?: Date
   priority?: 'low' | 'medium' | 'high'
   reminder?: Date
+  checkInDates?: string[] // 存储打卡日期的数组，格式 'YYYY-MM-DD'
+  streakCount?: number // 连续打卡天数
+  totalCheckIns?: number // 总打卡次数
 }
 
 // 添加拖拽类型定义
@@ -95,16 +99,31 @@ export const NoteApp = (): JSX.Element => {
       notes.map((note) => {
         if (note.id === id) {
           const today = new Date().toISOString().split('T')[0]
-          if (note.repeatType === 'daily') {
-            // 如果是每日待办，只在当天标记为完成
+          const checkInDates = note.checkInDates || []
+
+          if (!checkInDates.includes(today)) {
+            // 添加今天的打卡记录
+            checkInDates.push(today)
+            // 计算连续打卡天数
+            let streak = 1
+            let currentDate = new Date(today)
+            currentDate.setDate(currentDate.getDate() - 1)
+
+            while (checkInDates.includes(currentDate.toISOString().split('T')[0])) {
+              streak++
+              currentDate.setDate(currentDate.getDate() - 1)
+            }
+
             return {
               ...note,
-              isCompleted: note.lastCompletedDate !== today,
-              lastCompletedDate: note.lastCompletedDate === today ? undefined : today
+              isCompleted: true,
+              checkInDates,
+              streakCount: streak,
+              totalCheckIns: (note.totalCheckIns || 0) + 1
             }
           }
-          // 一次性待办
-          return { ...note, isCompleted: !note.isCompleted }
+
+          return note
         }
         return note
       })
@@ -220,6 +239,7 @@ export const NoteApp = (): JSX.Element => {
           animate={{ opacity: 1, y: 0 }}
           className="relative mb-12"
         >
+          {' '}
           <div className="absolute inset-0 bg-blue-500 opacity-10 blur-2xl rounded-full"></div>
           <h1 className="text-5xl font-bold text-center mb-4 relative bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
             HoWhite记事本
@@ -583,6 +603,29 @@ export const NoteApp = (): JSX.Element => {
                                     </div>
                                   </div>
                                 </div>
+
+                                {note.category === 'todos' && (
+                                  <div className="mt-4 border-t border-gray-700 pt-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <div>
+                                        <div className="text-sm text-gray-400">连续打卡</div>
+                                        <div className="text-2xl font-bold text-green-500">
+                                          {note.streakCount || 0} 天
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="text-sm text-gray-400">总打卡</div>
+                                        <div className="text-2xl font-bold text-blue-500">
+                                          {note.totalCheckIns || 0} 天
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <CheckInCalendar
+                                      checkInDates={note.checkInDates || []}
+                                      onCheckIn={() => toggleTodoComplete(note.id)}
+                                    />
+                                  </div>
+                                )}
                               </div>
                             )}
                           </Draggable>
